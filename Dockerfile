@@ -1,3 +1,4 @@
+# https://docs.docker.com/engine/install/ubuntu/
 # Use an official Python runtime as a parent image
 FROM python:3.10-slim
 
@@ -18,4 +19,4 @@ EXPOSE 80
 ENV PYTHONUNBUFFERED=1
 
 # Run the application
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
