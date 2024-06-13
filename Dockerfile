@@ -12,11 +12,9 @@ COPY . /app
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r src/requirements.txt
 
-# Make port 80 available to the world outside this container
-EXPOSE 80
+# Make port 9595 available to the world outside this container
+EXPOSE 9595
 
-# Define environment variable
-ENV PYTHONUNBUFFERED=1
 
 # Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9595"]
