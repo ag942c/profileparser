@@ -1,78 +1,53 @@
 import json
-
+import nltk
 
 class ProcessText:
-    def __init__(self, text, nlp, ruler, additional_skills=[], additional_destination=[], additional_tech=[]):
+    def __init__(self, text, skills, designations, techs):
         print(f"Start Processing")
-        self.nlp = nlp
-        self.ruler = ruler
         self.text = text
-        if additional_tech!=[]:
-            print(f"Adding Additional Technology")
-            self.additional_tech = additional_tech
-            self.add_additional_tech()
-
-        if additional_destination!=[]:
-            print(f"Adding Additional Designation")
-            self.additional_destination = additional_destination
-            self.add_additional_designation()
-
-        if additional_skills!=[]:
-            print(f"Adding Additional Skills")
-            self.additional_skills = additional_skills
-            self.add_additional_skills()
-            
-
-    def add_additional_skills(self):
-        jsnl_li = []
-        for skill in self.additional_skills:
-            if not skill:
-                continue
-            pattern = {"label":"SKILL", "pattern":[]}
-            #for word in skill.split():
-            pattern["pattern"].append({"LOWER": skill.strip()})
-            jsnl_li.append(pattern)
-
-        self.ruler.add_patterns(jsnl_li)
-
-    def add_additional_designation(self):
-        designation_li = []
-        for desig in self.additional_destination:
-            if not desig:
-                continue
-            pattern = {"label":"DESIGNATION", "pattern":[]}
-            #for word in desig.split():
-            pattern["pattern"].append({"LOWER": desig.strip()})
-            designation_li.append(pattern)
-
-        self.ruler.add_patterns(designation_li)
-
-    def add_additional_tech(self):
-        tech_stack_li = []
-        for tech in self.additional_tech:
-            if not tech:
-                continue
-            pattern = {"label":"TECHNOLOGY", "pattern":[]}
-            #for word in tech.split():
-            pattern["pattern"].append({"LOWER": tech.strip()})
-            tech_stack_li.append(pattern)
-
-        self.ruler.add_patterns(tech_stack_li)
-
+        self.ents2find = {"DESIGNATIONS":designations, "SKILLS":skills, "TECHS": techs}
+    
     def preprocessing(self):
         return self.text.replace(",", "").lower()
+    
+    def extract_entities(self, text, entnties, sent_id):
+        sentences = nltk.sent_tokenize(text)
+        for idx, sentence in enumerate(sentences):
+            tokens = nltk.word_tokenize(sentence)
+            pos_tags = nltk.pos_tag(tokens)
+            for chunk in nltk.ne_chunk(pos_tags):
+                if type(chunk) == nltk.Tree:
+                    if sent_id>5 and chunk.label()=="PERSON":
+                        continue
+                    ent = " ".join([c[0] for c in chunk.leaves()])
+                    if entnties.get(chunk.label()):
+                        entnties[chunk.label()] +=[ent]
+                    else:
+                        entnties[chunk.label()] =[ent]
+        return entnties
 
     def process(self):
+        entnties_dict = {}
+        for sntid, txt in enumerate(self.text.split("\\n")):
+            print(f"--------------> {txt} <-------------")
+            entnties_dict = self.extract_entities(txt, entnties_dict, sent_id = sntid)
         self.text = self.preprocessing()
-        doc = self.nlp(self.text)
-
-        output = {}
-        for ent in doc.ents:
-            if ent.label_ not in output:
-                output[ent.label_] = [(ent.text, ent.start_char, ent.end_char)]
-            else:
-                output[ent.label_].append((ent.text, ent.start_char, ent.end_char))
+        self.text_list = self.text.split()
         
-        return output
+        entnties_dict["DESIGNATIONS"] = []
+        entnties_dict["SKILLS"] = []
+        entnties_dict["TECHS"] = []
+
+        for key, value in self.ents2find.items():
+            for token in value:
+                if len(token.split())>1:
+                    if token in self.text:
+                        entnties_dict[key] +=[token]
+                elif token in self.text_list:
+                    entnties_dict[key] +=[token]
+        
+
+        
+        return entnties_dict
 
     
